@@ -1,0 +1,233 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  username  String   @unique @db.VarChar(50)
+  password  String   @db.VarChar(255)
+  role      String   @default("admin") @db.VarChar(20)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  approvedCommissions Commission[]       @relation("ApprovedBy")
+  approvedPayouts     CommissionPayout[] @relation("PayoutApprovedBy")
+
+  @@map("users")
+}
+
+model Customer {
+  id              String   @id @default(uuid()) @db.Uuid
+  lineUserId      String?  @unique @map("line_user_id") @db.VarChar(255)
+  displayName     String?  @map("display_name") @db.VarChar(255)
+  firstName       String?  @map("first_name") @db.VarChar(100)
+  lastName        String?  @map("last_name") @db.VarChar(100)
+  phone           String?  @db.VarChar(20)
+  email           String?  @db.VarChar(255)
+  idCardNumber    String?  @map("id_card_number") @db.VarChar(20)
+  address         String?  @db.Text
+  referrerId      String?  @map("referrer_id") @db.Uuid
+  placementUpline String?  @map("placement_upline") @db.Uuid
+  position        String?  @db.VarChar(10)
+  treePath        String?  @map("tree_path") @db.Text
+  status          String   @default("active") @db.VarChar(20)
+  registeredAt    DateTime @default(now()) @map("registered_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  referrer      Customer?       @relation("Referrer", fields: [referrerId], references: [id])
+  referrals     Customer[]      @relation("Referrer")
+  upline        Customer?       @relation("PlacementUpline", fields: [placementUpline], references: [id])
+  downlines     Customer[]      @relation("PlacementUpline")
+  orders           Order[]
+  commissions      Commission[]
+  sourceCommissions Commission[] @relation("SourceCustomer")
+  binaryVolume     BinaryVolume?
+  payouts       CommissionPayout[]
+  lineEvents    LineEvent[]
+
+  @@index([lineUserId])
+  @@index([referrerId])
+  @@index([placementUpline])
+  @@index([treePath])
+  @@map("customers")
+}
+
+model LineEvent {
+  id          String   @id @default(uuid()) @db.Uuid
+  lineUserId  String?  @map("line_user_id") @db.VarChar(255)
+  eventType   String?  @map("event_type") @db.VarChar(50)
+  raw         Json?    @db.JsonB
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  customer Customer? @relation(fields: [lineUserId], references: [lineUserId])
+  @@index([lineUserId])
+  @@map("line_events")
+}
+
+model Product {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String   @db.VarChar(200)
+  description     String?  @db.Text
+  price           Decimal  @db.Decimal(10, 2)
+  commissionType  String   @default("percent") @map("commission_type") @db.VarChar(20)
+  commissionValue Decimal? @map("commission_value") @db.Decimal(10, 2)
+  pv              Decimal  @default(0) @db.Decimal(10, 2)
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model Order {
+  id          String   @id @default(uuid()) @db.Uuid
+  customerId  String   @map("customer_id") @db.Uuid
+  orderNo     String   @unique @map("order_no") @db.VarChar(50)
+  totalAmount Decimal  @map("total_amount") @db.Decimal(10, 2)
+  totalPv     Decimal  @default(0) @map("total_pv") @db.Decimal(10, 2)
+  status      String   @default("pending") @db.VarChar(20)
+  paidAt      DateTime? @map("paid_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  customer     Customer       @relation(fields: [customerId], references: [id])
+  orderItems   OrderItem[]
+  commissions  Commission[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid()) @db.Uuid
+  orderId   String  @map("order_id") @db.Uuid
+  productId String  @map("product_id") @db.Uuid
+  quantity  Int     @default(1)
+  price     Decimal @db.Decimal(10, 2)
+  pv        Decimal @default(0) @db.Decimal(10, 2)
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+model CommissionConfig {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @db.VarChar(100)
+  type        String   @db.VarChar(20)
+  level       Int      @default(0)
+  percentage  Decimal  @db.Decimal(5, 2)
+  maxLevels   Int      @default(1) @map("max_levels")
+  minPv       Decimal  @default(0) @map("min_pv") @db.Decimal(10, 2)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  commissions Commission[]
+
+  @@map("commission_config")
+}
+
+model BinaryVolume {
+  id           String   @id @default(uuid()) @db.Uuid
+  customerId   String   @unique @map("customer_id") @db.Uuid
+  leftVolume   Decimal  @default(0) @map("left_volume") @db.Decimal(10, 2)
+  rightVolume  Decimal  @default(0) @map("right_volume") @db.Decimal(10, 2)
+  pairedVolume Decimal  @default(0) @map("paired_volume") @db.Decimal(10, 2)
+  carryLeft    Decimal  @default(0) @map("carry_left") @db.Decimal(10, 2)
+  carryRight   Decimal  @default(0) @map("carry_right") @db.Decimal(10, 2)
+  computedAt   DateTime? @map("computed_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at")
+
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  @@map("binary_volumes")
+}
+
+model Commission {
+  id                 String    @id @default(uuid()) @db.Uuid
+  customerId         String    @map("customer_id") @db.Uuid
+  sourceOrderId      String?   @map("source_order_id") @db.Uuid
+  sourceCustomerId   String?   @map("source_customer_id") @db.Uuid
+  commissionConfigId String?   @map("commission_config_id") @db.Uuid
+  type               String    @db.VarChar(20)
+  amount             Decimal   @db.Decimal(10, 2)
+  pvAmount           Decimal   @default(0) @map("pv_amount") @db.Decimal(10, 2)
+  level              Int       @default(0)
+  status             String    @default("calculated") @db.VarChar(20)
+  calculatedAt       DateTime  @default(now()) @map("calculated_at")
+  approvedAt         DateTime? @map("approved_at")
+  approvedBy         String?   @map("approved_by") @db.Uuid
+  paidAt             DateTime? @map("paid_at")
+  payoutId           String?   @map("payout_id") @db.Uuid
+  remark             String?   @db.Text
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  customer        Customer         @relation(fields: [customerId], references: [id])
+  sourceOrder      Order?           @relation(fields: [sourceOrderId], references: [id])
+  sourceCustomer   Customer?        @relation("SourceCustomer", fields: [sourceCustomerId], references: [id])
+  commissionConfig CommissionConfig? @relation(fields: [commissionConfigId], references: [id])
+  approvedByUser   User?            @relation("ApprovedBy", fields: [approvedBy], references: [id])
+  payout           CommissionPayout? @relation(fields: [payoutId], references: [id])
+
+  @@index([customerId])
+  @@index([status])
+  @@index([payoutId])
+  @@index([type])
+  @@map("commissions")
+}
+
+model CommissionPayout {
+  id              String    @id @default(uuid()) @db.Uuid
+  customerId      String    @map("customer_id") @db.Uuid
+  totalAmount     Decimal   @map("total_amount") @db.Decimal(10, 2)
+  periodType      String    @map("period_type") @db.VarChar(10)
+  periodStart     DateTime  @map("period_start") @db.Date
+  periodEnd       DateTime  @map("period_end") @db.Date
+  dueDate         DateTime? @map("due_date") @db.Date
+  totalCalculated Decimal   @default(0) @map("total_calculated") @db.Decimal(10, 2)
+  totalApproved   Decimal   @default(0) @map("total_approved") @db.Decimal(10, 2)
+  totalDeductions Decimal   @default(0) @map("total_deductions") @db.Decimal(10, 2)
+  netAmount       Decimal   @map("net_amount") @db.Decimal(10, 2)
+  bankName        String?   @map("bank_name") @db.VarChar(100)
+  bankAccount     String?   @map("bank_account") @db.VarChar(50)
+  accountName     String?   @map("account_name") @db.VarChar(200)
+  status          String    @default("draft") @db.VarChar(20)
+  generatedAt     DateTime  @default(now()) @map("generated_at")
+  approvedAt      DateTime? @map("approved_at")
+  approvedBy      String?   @map("approved_by") @db.Uuid
+  completedAt     DateTime? @map("completed_at")
+  rejectedAt      DateTime? @map("rejected_at")
+  rejectReason    String?   @map("reject_reason") @db.Text
+  remark          String?   @db.Text
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  customer       Customer     @relation(fields: [customerId], references: [id])
+  approvedByUser User?        @relation("PayoutApprovedBy", fields: [approvedBy], references: [id])
+  commissions    Commission[]
+
+  @@index([customerId])
+  @@index([status])
+  @@index([periodType, periodStart])
+  @@map("commission_payouts")
+}
+
+model PayoutPeriod {
+  id          String    @id @default(uuid()) @db.Uuid
+  periodType  String    @map("period_type") @db.VarChar(10)
+  periodStart DateTime  @map("period_start") @db.Date
+  periodEnd   DateTime  @map("period_end") @db.Date
+  dueDate     DateTime? @map("due_date") @db.Date
+  isClosed    Boolean   @default(false) @map("is_closed")
+  closedAt    DateTime? @map("closed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@unique([periodType, periodStart])
+  @@map("payout_periods")
+}
