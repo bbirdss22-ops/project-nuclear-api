@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
-import { AppController } from './app.controller';
+import { PrismaModule } from './prisma/prisma.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { AppController } from './app.controller.js';
 
 @Module({
   imports: [
@@ -9,6 +10,7 @@ import { AppController } from './app.controller';
       isGlobal: true,
     }),
     PrismaModule,
+    AuthModule,
   ],
   controllers: [AppController],
 })
