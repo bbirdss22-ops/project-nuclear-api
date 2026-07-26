@@ -8,6 +8,14 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiBody,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { CustomerService } from './customer.service.js';
 import { CreateCustomerDto } from './dto/create-customer.dto.js';
 import { UpdateCustomerDto } from './dto/update-customer.dto.js';
@@ -16,64 +24,74 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 
+@ApiTags('Customers')
 @Controller('customers')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
 
-  /**
-   * POST /api/customers — Create customer (public, no auth)
-   */
   @Post()
+  @ApiOperation({ summary: 'Create customer (Public)' })
+  @ApiBody({ type: CreateCustomerDto })
+  @ApiResponse({ status: 201, description: 'Customer created' })
+  @ApiResponse({ status: 400, description: 'Validation error' })
+  @ApiResponse({ status: 409, description: 'lineUserId already exists' })
   async create(@Body() dto: CreateCustomerDto) {
     return this.customerService.create(dto);
   }
 
-  /**
-   * GET /api/customers — List customers (protected, admin/superadmin)
-   */
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'List customers (paginated)' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiResponse({ status: 200, description: 'Paginated customer list' })
   async findAll(@Query() query: QueryCustomerDto) {
     return this.customerService.findAll(query);
   }
 
-  /**
-   * GET /api/customers/search?q=xxx — Search customers (protected, admin/superadmin)
-   */
   @Get('search')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Search customers by name/phone/email' })
+  @ApiQuery({ name: 'q', required: false, example: 'สมชาย', description: 'คำค้นหา' })
+  @ApiResponse({ status: 200, description: 'Search results' })
   async search(@Query() query: QueryCustomerDto) {
     return this.customerService.search(query);
   }
 
-  /**
-   * GET /api/customers/line/:lineUserId — Find by Line userId (protected)
-   */
   @Get('line/:lineUserId')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Find customer by Line User ID' })
+  @ApiResponse({ status: 200, description: 'Customer found' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
   async findByLineUserId(@Param('lineUserId') lineUserId: string) {
     return this.customerService.findByLineUserId(lineUserId);
   }
 
-  /**
-   * GET /api/customers/:id — Get customer detail (protected)
-   */
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get customer detail by ID' })
+  @ApiResponse({ status: 200, description: 'Customer detail' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
   async findById(@Param('id') id: string) {
     return this.customerService.findById(id);
   }
 
-  /**
-   * PATCH /api/customers/:id — Update customer (protected)
-   */
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update customer (partial)' })
+  @ApiBody({ type: UpdateCustomerDto })
+  @ApiResponse({ status: 200, description: 'Customer updated' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
   async update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
     return this.customerService.update(id, dto);
   }

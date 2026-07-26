@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import * as bodyParser from 'body-parser';
 
@@ -9,9 +10,28 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.enableCors();
 
+  // ---------- Swagger / OpenAPI ----------
+  const config = new DocumentBuilder()
+    .setTitle('Project Nuclear API')
+    .setDescription('Line OA + MLM Platform Backend')
+    .setVersion('1.0.0')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,
+      tagsSorter: 'alpha',
+      operationsSorter: 'method',
+    },
+  });
+  // ---------------------------------------
+
   // Raw body middleware for LINE webhook signature verification
-  // This must be BEFORE the global ValidationPipe to capture raw buffer
-  // LINE platform sends webhook as text/plain, but we also accept application/json for resilience
   app.use(
     '/api/line/webhook',
     bodyParser.raw({
@@ -30,5 +50,6 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`🚀 Project Newclear API running on http://localhost:${port}/api/health`);
+  console.log(`📖 Swagger docs at http://localhost:${port}/api/docs`);
 }
 bootstrap();
