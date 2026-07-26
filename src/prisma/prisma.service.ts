@@ -23,6 +23,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
 
       for (let i = 1; i <= 5; i++) {
         const username = `admin${i}`;
+        const role = i === 1 ? 'superadmin' : 'admin';
         const existing = await this.user.findUnique({ where: { username } });
 
         if (!existing) {
@@ -30,17 +31,17 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
             data: {
               username,
               password: hash,
-              role: i === 1 ? 'superadmin' : 'admin',
+              role,
             },
           });
-          this.logger.log(`Created admin user: ${username}`);
+          this.logger.log(`Created user: ${username} (${role})`);
         } else {
-          // Always update password hash to ensure it matches the known hash
+          // Always refresh password hash and ensure correct role
           await this.user.update({
             where: { username },
-            data: { password: hash },
+            data: { password: hash, role },
           });
-          this.logger.log(`Updated password for: ${username}`);
+          this.logger.log(`Updated user: ${username} (${role})`);
         }
       }
       this.logger.log('Admin user seeding completed');
