@@ -44,8 +44,9 @@ export class CustomerController {
   @Roles('admin', 'superadmin')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'List customers (paginated)' })
-  @ApiQuery({ name: 'page', required: false, example: 1 })
-  @ApiQuery({ name: 'limit', required: false, example: 20 })
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'หน้าปัจจุบัน' })
+  @ApiQuery({ name: 'pageSize', required: false, example: 20, description: 'จำนวนต่อหน้า' })
+  @ApiQuery({ name: 'limit', required: false, example: 20, description: '[Deprecated] ใช้ pageSize แทน' })
   @ApiResponse({ status: 200, description: 'Paginated customer list' })
   async findAll(@Query() query: QueryCustomerDto) {
     return this.customerService.findAll(query);
@@ -57,6 +58,9 @@ export class CustomerController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Search customers by name/phone/email' })
   @ApiQuery({ name: 'q', required: false, example: 'สมชาย', description: 'คำค้นหา' })
+  @ApiQuery({ name: 'page', required: false, example: 1, description: 'หน้าปัจจุบัน' })
+  @ApiQuery({ name: 'pageSize', required: false, example: 20, description: 'จำนวนต่อหน้า' })
+  @ApiQuery({ name: 'limit', required: false, example: 20, description: '[Deprecated] ใช้ pageSize แทน' })
   @ApiResponse({ status: 200, description: 'Search results' })
   async search(@Query() query: QueryCustomerDto) {
     return this.customerService.search(query);

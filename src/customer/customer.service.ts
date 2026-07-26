@@ -8,6 +8,9 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateCustomerDto } from './dto/create-customer.dto.js';
 import { UpdateCustomerDto } from './dto/update-customer.dto.js';
 import { QueryCustomerDto } from './dto/query-customer.dto.js';
+import { PaginatedResponse, buildPaginationLinks } from '../common/interfaces/pagination.interface.js';
+
+const CUSTOMER_BASE_PATH = '/api/customers';
 
 @Injectable()
 export class CustomerService {
@@ -64,32 +67,54 @@ export class CustomerService {
   }
 
   /**
+   * Build a standardized paginated response
+   */
+  private paginate<T>(
+    data: T[],
+    total: number,
+    page: number,
+    pageSize: number,
+    basePath: string,
+  ): PaginatedResponse<T> {
+    const totalPages = Math.ceil(total / pageSize) || 1;
+
+    return {
+      data,
+      page,
+      pageSize,
+      totalItems: total,
+      totalPages,
+      _links: buildPaginationLinks(basePath, page, pageSize, totalPages),
+    };
+  }
+
+  /**
    * GET /api/customers — List customers (paginated)
    */
-  async findAll(query: QueryCustomerDto) {
+  async findAll(query: QueryCustomerDto): Promise<PaginatedResponse<any>> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const pageSize = query.effectivePageSize;
+    const skip = (page - 1) * pageSize;
 
     const [data, total] = await Promise.all([
       this.prisma.customer.findMany({
         skip,
-        take: limit,
+        take: pageSize,
         orderBy: { registeredAt: 'desc' },
       }),
       this.prisma.customer.count(),
     ]);
 
-    return { data, total, page, limit };
+    return this.paginate(data, total, page, pageSize, CUSTOMER_BASE_PATH);
   }
 
   /**
    * GET /api/customers/search?q=xxx — Search customers
    */
-  async search(query: QueryCustomerDto) {
+  async search(query: QueryCustomerDto): Promise<PaginatedResponse<any>> {
     const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
-    const skip = (page - 1) * limit;
+    const pageSize = query.effectivePageSize;
+    const skip = (page - 1) * pageSize;
     const q = query.q?.trim();
 
     if (!q) {
@@ -111,13 +136,13 @@ export class CustomerService {
       this.prisma.customer.findMany({
         where,
         skip,
-        take: limit,
+        take: pageSize,
         orderBy: { registeredAt: 'desc' },
       }),
       this.prisma.customer.count({ where }),
     ]);
 
-    return { data, total, page, limit };
+    return this.paginate(data, total, page, pageSize, CUSTOMER_BASE_PATH);
   }
 
   /**

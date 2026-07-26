@@ -10,15 +10,34 @@ export class QueryCustomerDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ example: 20, description: 'จำนวนต่อหน้า' })
+  @ApiPropertyOptional({ example: 20, description: 'จำนวนต่อหน้า (แทนที่ limit)' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  limit?: number = 20;
+  pageSize?: number;
+
+  @ApiPropertyOptional({ example: 20, description: '[Deprecated] จำนวนต่อหน้า — ใช้ pageSize แทน' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number;
 
   @ApiPropertyOptional({ example: 'สมชาย', description: 'คำค้นหา (ชื่อ/เบอร์/email)' })
   @IsOptional()
   @IsString()
   q?: string;
+
+  /**
+   * Resolve effective page size:
+   * - pageSize takes priority
+   * - fallback to limit (backward compatible)
+   * - default 20
+   */
+  get effectivePageSize(): number {
+    if (this.pageSize !== undefined) return this.pageSize;
+    if (this.limit !== undefined) return this.limit;
+    return 20;
+  }
 }
