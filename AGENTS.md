@@ -68,7 +68,39 @@ See `.env.example` for all required variables.
 | POST | `/api/auth/login` | Admin login (JWT) |
 | POST | `/api/customers` | Create customer |
 | GET | `/api/customers` | List customers (protected) |
+| GET | `/api/customers/search` | Search customers (protected) |
+| GET | `/api/customers/:id` | Customer detail (protected) |
+| GET | `/api/customers/line/:lineUserId` | Find by Line ID (protected) |
+| PATCH | `/api/customers/:id` | Update customer (protected) |
 | POST | `/api/line/webhook` | Line webhook |
+
+## Pagination Standard
+
+ทุก endpoint ที่ return list **ต้องใช้ format นี้เท่านั้น**:
+
+```json
+{
+  "data": [...],
+  "page": 1,
+  "pageSize": 20,
+  "totalItems": 100,
+  "totalPages": 5,
+  "_links": {
+    "self": "/api/xxx?page=1&pageSize=20",
+    "next": "/api/xxx?page=2&pageSize=20",
+    "prev": null
+  }
+}
+```
+
+**Query params:**
+- `page` (optional, default 1)
+- `pageSize` (optional, default 20)
+- `limit` (optional, backward compat — alias for pageSize)
+
+**Interface:** `src/common/interfaces/pagination.interface.ts` — `PaginatedResponse<T>`
+
+**Prisma:** ต้องใช้ `orderBy: { createdAt: 'desc' }` เสมอกับ list queries
 
 ## Database
 
