@@ -1,11 +1,11 @@
 import {
   Controller,
   Post,
-  Body,
   Logger,
   HttpCode,
   Req,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import { LineService } from './line.service.js';
@@ -19,6 +19,19 @@ export class LineController {
   constructor(private readonly lineService: LineService) {}
 
   /**
+   * Parse the raw webhook body (Buffer or string) into a parsed object.
+   * This avoids the global ValidationPipe which can break on raw body payloads.
+   */
+  private parseBody(rawBody: Buffer | string): LineWebhookEventDto {
+    const raw = Buffer.isBuffer(rawBody) ? rawBody.toString('utf-8') : rawBody;
+    try {
+      return JSON.parse(raw) as LineWebhookEventDto;
+    } catch {
+      throw new BadRequestException('Invalid JSON body');
+    }
+  }
+
+  /**
    * POST /api/line/webhook
    * Receive LINE webhook events
    */
@@ -27,8 +40,11 @@ export class LineController {
   @UseGuards(LineSignatureGuard)
   async webhook(
     @Req() request: Request,
-    @Body() body: LineWebhookEventDto,
   ): Promise<{ status: string }> {
+    // bodyParser.raw middleware sets req.body to a Buffer
+    // Parse it here to avoid the global ValidationPipe interfering
+    const body: LineWebhookEventDto = this.parseBody(request.body);
+
     this.logger.log(
       `📩 Webhook received: ${body.events?.length ?? 0} events from ${body.destination}`,
     );

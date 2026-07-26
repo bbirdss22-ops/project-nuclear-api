@@ -33,10 +33,10 @@ export class LineSignatureGuard implements CanActivate {
       throw new UnauthorizedException('Missing LINE signature');
     }
 
-    // We need the raw body for signature validation
-    const rawBody = (request as any).rawBody;
-    if (!rawBody) {
-      this.logger.warn('Raw body not available for signature validation');
+    // bodyParser.raw middleware sets req.body to Buffer — use it for signature validation
+    const rawBody = request.body;
+    if (!rawBody || !Buffer.isBuffer(rawBody)) {
+      this.logger.warn('Raw body not available (not a Buffer) for signature validation');
       throw new UnauthorizedException('Raw body required for signature validation');
     }
 

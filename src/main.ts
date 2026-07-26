@@ -11,10 +11,11 @@ async function bootstrap() {
 
   // Raw body middleware for LINE webhook signature verification
   // This must be BEFORE the global ValidationPipe to capture raw buffer
+  // LINE platform sends webhook as text/plain, but we also accept application/json for resilience
   app.use(
     '/api/line/webhook',
     bodyParser.raw({
-      type: 'application/json',
+      type: ['application/json', 'text/plain'],
     }),
   );
 
