@@ -33,17 +33,14 @@ export class PrismaService extends PrismaClient implements OnModuleInit {
               role: i === 1 ? 'superadmin' : 'admin',
             },
           });
-          this.logger.log(`Seeded admin user: ${username}`);
+          this.logger.log(`Created admin user: ${username}`);
         } else {
-          // Update password hash if the user already exists but has old hash
-          const isOldHash = !existing.password.startsWith('$2b$');
-          if (isOldHash) {
-            await this.user.update({
-              where: { username },
-              data: { password: hash },
-            });
-            this.logger.log(`Updated password hash for: ${username}`);
-          }
+          // Always update password hash to ensure it matches the known hash
+          await this.user.update({
+            where: { username },
+            data: { password: hash },
+          });
+          this.logger.log(`Updated password for: ${username}`);
         }
       }
       this.logger.log('Admin user seeding completed');
