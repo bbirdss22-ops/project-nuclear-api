@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -56,6 +56,47 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  async validateRegistrationToken(token: string) {
+    const record = await this.prisma.registrationToken.findUnique({
+      where: { id: token },
+    });
+
+    if (!record || record.usedAt || record.expiresAt < new Date()) {
+      throw new NotFoundException('Invalid or expired registration token');
+    }
+
+    // Check if user already registered
+    const existingCustomer = await this.prisma.customer.findFirst({
+      where: { lineUserId: record.lineUserId },
+    });
+
+    return {
+      valid: true,
+      lineUserId: record.lineUserId,
+      alreadyRegistered: !!existingCustomer,
+    };
+  }
+
+  async consumeRegistrationToken(token: string, customerId: string) {
+    const record = await this.prisma.registrationToken.findUnique({
+      where: { id: token },
+    });
+
+    if (!record) {
+      throw new NotFoundException('Registration token not found');
+    }
+
+    await this.prisma.registrationToken.update({
+      where: { id: token },
+      data: {
+        usedAt: new Date(),
+        customerId,
+      },
+    });
+
+    return { message: 'Token consumed successfully' };
   }
 
   async changePassword(userId: string, currentPassword: string, newPassword: string) {

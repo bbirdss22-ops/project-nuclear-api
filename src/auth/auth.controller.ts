@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, HttpCode, HttpStatus, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthService } from './auth.service.js';
 import { LoginDto } from './dto/login.dto.js';
@@ -19,6 +19,27 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto.username, loginDto.password);
+  }
+
+  @Get('registration-token/:token')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Validate registration token from LINE' })
+  @ApiResponse({ status: 200, description: 'Token valid' })
+  @ApiResponse({ status: 404, description: 'Token not found or expired' })
+  async validateRegistrationToken(@Param('token') token: string) {
+    return this.authService.validateRegistrationToken(token);
+  }
+
+  @Post('registration-token/:token/consume')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Mark registration token as used after customer creation' })
+  @ApiResponse({ status: 200, description: 'Token consumed' })
+  @ApiResponse({ status: 404, description: 'Token not found' })
+  async consumeRegistrationToken(
+    @Param('token') token: string,
+    @Body('customerId') customerId: string,
+  ) {
+    return this.authService.consumeRegistrationToken(token, customerId);
   }
 
   @Post('change-password')

@@ -43,12 +43,13 @@ model Customer {
   referrals     Customer[]      @relation("Referrer")
   upline        Customer?       @relation("PlacementUpline", fields: [placementUpline], references: [id])
   downlines     Customer[]      @relation("PlacementUpline")
-  orders           Order[]
-  commissions      Commission[]
-  sourceCommissions Commission[] @relation("SourceCustomer")
-  binaryVolume     BinaryVolume?
-  payouts       CommissionPayout[]
-  lineEvents    LineEvent[]
+  orders              Order[]
+  commissions         Commission[]
+  sourceCommissions   Commission[] @relation("SourceCustomer")
+  binaryVolume        BinaryVolume?
+  payouts             CommissionPayout[]
+  lineEvents          LineEvent[]
+  registrationTokens  RegistrationToken[]
 
   @@index([lineUserId])
   @@index([referrerId])
@@ -218,6 +219,18 @@ model CommissionPayout {
   @@index([status])
   @@index([periodType, periodStart])
   @@map("commission_payouts")
+}
+
+model RegistrationToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  lineUserId String    @map("line_user_id") @db.VarChar(255)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  expiresAt  DateTime  @map("expires_at")
+  usedAt     DateTime? @map("used_at")
+  customerId String?   @map("customer_id") @db.Uuid
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("registration_tokens")
 }
 
 model PayoutPeriod {

@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
 import { Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service.js';
@@ -72,12 +73,25 @@ export class LineService {
     }
 
     if (postbackData === 'register') {
+      const token = uuidv4();
+      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      await this.prisma.registrationToken.create({
+        data: {
+          id: token,
+          lineUserId: lineUserId ?? '',
+          expiresAt,
+        },
+      });
+
+      const registerUrl = `https://project-nuclear-web.vercel.app/register?token=${token}`;
+
       return {
         replyToken: replyToken ?? '',
         messages: [
           {
             type: 'text',
-            text: '📝 สมัครสมาชิกได้ที่ลิงก์นี้:\nhttps://project-nuclear-api.onrender.com/api/register\nหรือติดต่อเจ้าหน้าที่',
+            text: `📝 กรุณากดลิงก์นี้เพื่อสมัครสมาชิก (ลิงก์หมดอายุใน 5 นาที):\n${registerUrl}`,
           },
         ],
       };
