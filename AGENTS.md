@@ -77,6 +77,14 @@ See `.env.example` for all required variables.
 | `@ApiBearerAuth()` ❌ | ไม่ถูกต้อง — ต้องระบุ scheme name |
 | `@ApiBearerAuth('access-token')` ✅ | ถูกต้อง — match กับ security scheme ใน main.ts |
 
+> ⚠️ **RULE: ทุกครั้งที่มีการ update API ต้อง update Swagger ให้ตรงเสมอ**
+> - เพิ่ม endpoint ใหม่ → ต้องมี `@ApiOperation`, `@ApiBody` (ถ้ามี), `@ApiResponse` ครบ
+> - protected endpoints → `@ApiBearerAuth('access-token')` + `@ApiResponse({ status: 401 })`
+> - public endpoints → ไม่ต้องมี `@ApiBearerAuth`
+> - เปลี่ยน error code → update `@ApiResponse` decorator
+> - ถ้ามี request body ใหม่ → สร้าง DTO + `@ApiBody({ type: DtoClass })`
+> - endpoint ที่ return list → `@ApiResponse({ status: 200, type: DtoClass, isArray: true })`
+
 ## API Endpoints
 
 | Method | Path | Auth | Description |
