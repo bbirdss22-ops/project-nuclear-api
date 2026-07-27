@@ -6,7 +6,7 @@ import { UserProfileService } from './user-profile.service.js';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto.js';
 
 @ApiTags('User Profile')
-@ApiBearerAuth()
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard)
 @Controller('user-profile')
 export class UserProfileController {

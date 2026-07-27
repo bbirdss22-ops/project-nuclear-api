@@ -60,19 +60,39 @@ See `.env.example` for all required variables.
 | `LINE_ACCESS_TOKEN` | Line Messaging API token |
 | `PORT` | Server port (default: 3000) |
 
+## Swagger / OpenAPI Security
+
+```ts
+// main.ts — กำหนด security scheme ชื่อ 'access-token'
+.addBearerAuth(
+  { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+  'access-token',
+)
+```
+
+**Protected endpoints** ใช้ `@ApiBearerAuth('access-token')` decorator — Swagger จะส่ง token ผ่าน Header: `Authorization: Bearer <token>`
+
+| Decorator | ใช้กับ |
+|-----------|-------|
+| `@ApiBearerAuth()` ❌ | ไม่ถูกต้อง — ต้องระบุ scheme name |
+| `@ApiBearerAuth('access-token')` ✅ | ถูกต้อง — match กับ security scheme ใน main.ts |
+
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/health` | Health check |
-| POST | `/api/auth/login` | Admin login (JWT) |
-| POST | `/api/customers` | Create customer |
-| GET | `/api/customers` | List customers (protected) |
-| GET | `/api/customers/search` | Search customers (protected) |
-| GET | `/api/customers/:id` | Customer detail (protected) |
-| GET | `/api/customers/line/:lineUserId` | Find by Line ID (protected) |
-| PATCH | `/api/customers/:id` | Update customer (protected) |
-| POST | `/api/line/webhook` | Line webhook |
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| GET | `/api/health` | ❌ | Health check |
+| POST | `/api/auth/login` | ❌ | Admin login (JWT) |
+| POST | `/api/auth/change-password` | ✅ Bearer | เปลี่ยนรหัสผ่าน |
+| GET | `/api/user-profile/me` | ✅ Bearer | Get profile (auto-create) |
+| PUT | `/api/user-profile/me` | ✅ Bearer | Update profile |
+| POST | `/api/customers` | ❌ | Create customer (public) |
+| GET | `/api/customers` | ✅ Bearer | List customers (paginated) |
+| GET | `/api/customers/search` | ✅ Bearer | Search customers |
+| GET | `/api/customers/:id` | ✅ Bearer | Customer detail |
+| GET | `/api/customers/line/:lineUserId` | ✅ Bearer | Find by Line ID |
+| PATCH | `/api/customers/:id` | ✅ Bearer | Update customer |
+| POST | `/api/line/webhook` | ❌ | Line webhook |
 
 ## Pagination Standard
 
