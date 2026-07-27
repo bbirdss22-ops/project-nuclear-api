@@ -131,8 +131,7 @@ export class LineService {
 
       case 'message':
         this.logger.log(`💬 Message event from ${lineUserId}: type=${event.message?.type}`);
-        // Message events are handled by the controller directly
-        return null;
+        return this.handleMessage(lineUserId, event.replyToken, event.message);
 
       default:
         this.logger.log(`📋 Unhandled event type: ${eventType}`);
@@ -162,6 +161,108 @@ export class LineService {
       this.logger.error(
         `❌ Failed to push message to ${lineUserId}: ${(error as Error).message}`,
       );
+      return false;
+    }
+  }
+
+  /**
+   * Handle text message events
+   */
+  async handleMessage(
+    lineUserId: string | undefined,
+    replyToken: string | undefined,
+    message: { id: string; type: string; text?: string; [key: string]: unknown } | undefined,
+  ): Promise<messagingApi.ReplyMessageRequest | null> {
+    if (!message || message.type !== 'text' || !replyToken) {
+      return null;
+    }
+
+    const text = message.text ?? '';
+    this.logger.log(`💬 Text from ${lineUserId}: "${text.substring(0, 100)}"`);
+
+    // Simple command router
+    const lowerText = text.toLowerCase().trim();
+
+    if (lowerText === 'สวัสดี' || lowerText === 'hi' || lowerText === 'hello') {
+      return {
+        replyToken,
+        messages: [
+          {
+            type: 'text',
+            text: '👋 สวัสดีครับ! \n\nยินดีต้อนรับสู่ Project Nuclear \n\n📌 สามารถใช้เมนูด้านล่าง หรือพิมพ์คำสั่งต่อไปนี้:\n\n• "สินค้า" — ดูรายการสินค้า\n• "ติดต่อ" — ติดต่อเจ้าหน้าที่\n• "สมัคร" — สมัครสมาชิก',
+          },
+        ],
+      };
+    }
+
+    if (lowerText === 'สินค้า' || lowerText === 'product' || lowerText === 'products') {
+      return {
+        replyToken,
+        messages: [
+          {
+            type: 'text',
+            text: '🛍️ รายการสินค้า:\n\nขณะนี้ยังไม่มีสินค้าในระบบ\n📌 ติดต่อเจ้าหน้าที่เพื่อสอบถามเพิ่มเติม',
+          },
+        ],
+      };
+    }
+
+    if (lowerText === 'ติดต่อ' || lowerText === 'contact') {
+      return {
+        replyToken,
+        messages: [
+          {
+            type: 'text',
+            text: '📞 ติดต่อเจ้าหน้าที่:\n\nLine Official: @project-nuclear\nหรือรอเจ้าหน้าที่ตอบกลับในแชทนี้',
+          },
+        ],
+      };
+    }
+
+    if (lowerText === 'สมัคร' || lowerText === 'register') {
+      return {
+        replyToken,
+        messages: [
+          {
+            type: 'text',
+            text: '📝 สมัครสมาชิกได้ที่:\nhttps://project-nuclear-api.onrender.com/api/register\n\nหรือพิมพ์ "สมัคร [ชื่อ] [เบอร์โทร]" เพื่อสมัครผ่าน Line',
+          },
+        ],
+      };
+    }
+
+    // Default fallback — reply with echo or helpful message
+    return {
+      replyToken,
+      messages: [
+        {
+          type: 'text',
+          text: '🤖 ขออภัยครับ ไม่เข้าใจคำว่า "' + text + '"\n\nพิมพ์ "สวัสดี" เพื่อดูคำแนะนำการใช้งาน',
+        },
+      ],
+    };
+  }
+
+  /**
+   * Reply to a user via reply token (uses reply API)
+   */
+  async replyMessage(request: messagingApi.ReplyMessageRequest): Promise<boolean> {
+    if (!this.client) {
+      this.logger.error('❌ Cannot reply: LINE_ACCESS_TOKEN not configured');
+      return false;
+    }
+
+    if (!request.replyToken) {
+      this.logger.warn('⚠️ Cannot reply: replyToken is empty');
+      return false;
+    }
+
+    try {
+      await this.client.replyMessage(request);
+      this.logger.log(`📤 Reply sent (replyToken: ${request.replyToken.substring(0, 8)}…)`);
+      return true;
+    } catch (error) {
+      this.logger.error(`❌ Failed to reply: ${(error as Error).message}`);
       return false;
     }
   }

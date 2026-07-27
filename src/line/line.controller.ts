@@ -52,8 +52,8 @@ export class LineController {
     for (const event of body.events) {
       try {
         const replyRequest = await this.lineService.processEvent(event);
-        if (replyRequest?.replyToken) {
-          this.logger.log(`✅ Processed event ${event.type}`);
+        if (replyRequest && replyRequest.replyToken) {
+          await this.lineService.replyMessage(replyRequest);
         }
       } catch (error) {
         this.logger.error(
