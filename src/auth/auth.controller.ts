@@ -28,7 +28,7 @@ export class AuthController {
   @ApiOperation({ summary: 'เปลี่ยนรหัสผ่าน (ต้องใช้ JWT token)' })
   @ApiBody({ type: ChangePasswordDto })
   @ApiResponse({ status: 200, description: 'Password changed successfully' })
-  @ApiResponse({ status: 401, description: 'Current password is incorrect' })
+  @ApiResponse({ status: 400, description: 'Current password is incorrect' })
   async changePassword(
     @CurrentUser('id') userId: string,
     @Body() dto: ChangePasswordDto,
