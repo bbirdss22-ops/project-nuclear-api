@@ -13,6 +13,8 @@ model User {
   role      String   @default("admin") @db.VarChar(20)
   createdAt DateTime @default(now()) @map("created_at")
 
+  userProfile         UserProfile?
+
   approvedCommissions Commission[]       @relation("ApprovedBy")
   approvedPayouts     CommissionPayout[] @relation("PayoutApprovedBy")
 
@@ -230,4 +232,20 @@ model PayoutPeriod {
 
   @@unique([periodType, periodStart])
   @@map("payout_periods")
+}
+
+model UserProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @map("user_id") @db.Uuid
+  displayName String?  @map("display_name") @db.VarChar(100)
+  email       String?  @db.VarChar(255)
+  phone       String?  @db.VarChar(20)
+  avatarUrl   String?  @map("avatar_url") @db.Text
+  bio         String?  @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_profiles")
 }
