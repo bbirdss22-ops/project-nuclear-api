@@ -17,6 +17,14 @@ export class CustomerService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Generate the next customer code in NC + 5-digit zero-padded format.
+   */
+  async generateCustomerCode(): Promise<string> {
+    const count = await this.prisma.customer.count();
+    return `NC${String(count + 1).padStart(5, '0')}`;
+  }
+
+  /**
    * POST /api/customers — Create a new customer (public)
    */
   async create(dto: CreateCustomerDto) {
@@ -50,8 +58,11 @@ export class CustomerService {
       .join(' ')
       .trim() || null;
 
+    const code = await this.generateCustomerCode();
+
     const customer = await this.prisma.customer.create({
       data: {
+        code,
         lineUserId: dto.lineUserId ?? null,
         displayName,
         firstName: dto.firstName ?? null,

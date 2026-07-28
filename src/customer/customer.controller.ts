@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -23,11 +24,17 @@ import { QueryCustomerDto } from './dto/query-customer.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
+import { LineService } from '../line/line.service.js';
 
 @ApiTags('Customers')
 @Controller('customers')
 export class CustomerController {
-  constructor(private readonly customerService: CustomerService) {}
+  private readonly logger = new Logger(CustomerController.name);
+
+  constructor(
+    private readonly customerService: CustomerService,
+    private readonly lineService: LineService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create customer (Public)' })
@@ -36,7 +43,21 @@ export class CustomerController {
   @ApiResponse({ status: 400, description: 'Validation error' })
   @ApiResponse({ status: 409, description: 'lineUserId already exists' })
   async create(@Body() dto: CreateCustomerDto) {
-    return this.customerService.create(dto);
+    const customer = await this.customerService.create(dto);
+
+    // Push welcome message with customer code via LINE if lineUserId is available
+    if (customer.lineUserId && customer.code) {
+      this.lineService
+        .pushMessage(
+          customer.lineUserId,
+          `🎉 สมัครสมาชิกสำเร็จ!\n🆔 รหัสลูกค้าของคุณคือ: ${customer.code}\n\n📌 ใช้รหัสนี้แจ้งเจ้าหน้าที่เวลาสอบถามหรือสั่งซื้อสินค้า`,
+        )
+        .catch((e: Error) =>
+          this.logger.error(`Push welcome failed: ${e.message}`),
+        );
+    }
+
+    return customer;
   }
 
   @Get()
