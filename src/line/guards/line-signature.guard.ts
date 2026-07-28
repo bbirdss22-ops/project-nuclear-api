@@ -5,9 +5,17 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { Injectable, CanActivate, ExecutionContext, Logger, UnauthorizedException } from '@nestjs/common';
 import { Request } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { validateSignature, LINE_SIGNATURE_HTTP_HEADER_NAME } from '@line/bot-sdk';
+
+/**
+ * Express Request extended with `rawBody` by NestFactory `{ rawBody: true }`.
+ */
+interface RequestWithRawBody extends Request {
+  rawBody?: Buffer;
+}
 
 @Injectable()
 export class LineSignatureGuard implements CanActivate {
@@ -16,7 +24,7 @@ export class LineSignatureGuard implements CanActivate {
   constructor(private readonly configService: ConfigService) {}
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest<Request>();
+    const request = context.switchToHttp().getRequest<RequestWithRawBody>();
     const channelSecret = this.configService.get<string>('LINE_CHANNEL_SECRET');
 
     // If LINE_CHANNEL_SECRET is not configured, skip verification
@@ -33,10 +41,10 @@ export class LineSignatureGuard implements CanActivate {
       throw new UnauthorizedException('Missing LINE signature');
     }
 
-    // bodyParser.raw middleware sets req.body to Buffer — use it for signature validation
-    const rawBody = request.body;
+    // rawBody is preserved as Buffer via NestFactory `{ rawBody: true }`
+    const rawBody = request.rawBody;
     if (!rawBody || !Buffer.isBuffer(rawBody)) {
-      this.logger.warn('Raw body not available (not a Buffer) for signature validation');
+      this.logger.warn('Raw body not available for signature validation');
       throw new UnauthorizedException('Raw body required for signature validation');
     }
 

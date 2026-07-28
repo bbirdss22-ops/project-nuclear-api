@@ -2,10 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
-import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.setGlobalPrefix('api');
   app.enableCors();
@@ -31,13 +30,8 @@ async function bootstrap() {
   });
   // ---------------------------------------
 
-  // Raw body middleware for LINE webhook signature verification
-  app.use(
-    '/api/line/webhook',
-    bodyParser.raw({
-      type: ['application/json', 'text/plain'],
-    }),
-  );
+  // Raw body is handled via NestFactory `{ rawBody: true }` option.
+  // Access raw Buffer via `request.rawBody` in the signature guard.
 
   app.useGlobalPipes(
     new ValidationPipe({

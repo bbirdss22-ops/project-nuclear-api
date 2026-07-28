@@ -5,13 +5,20 @@ import {
   HttpCode,
   Req,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import type { Request } from 'express';
 import { LineService } from './line.service.js';
 import { LineSignatureGuard } from './guards/line-signature.guard.js';
 import type { LineWebhookEventDto } from './dto/line-webhook.dto.js';
+
+/**
+ * Express Request extended with parsed JSON body and rawBody Buffer
+ * (via NestFactory `{ rawBody: true }`).
+ */
+interface RequestWithJsonBody {
+  body: LineWebhookEventDto;
+  rawBody?: Buffer;
+}
 
 @ApiTags('Line')
 @Controller('line')
@@ -20,15 +27,6 @@ export class LineController {
 
   constructor(private readonly lineService: LineService) {}
 
-  private parseBody(rawBody: Buffer | string): LineWebhookEventDto {
-    const raw = Buffer.isBuffer(rawBody) ? rawBody.toString('utf-8') : rawBody;
-    try {
-      return JSON.parse(raw) as LineWebhookEventDto;
-    } catch {
-      throw new BadRequestException('Invalid JSON body');
-    }
-  }
-
   @Post('webhook')
   @HttpCode(200)
   @UseGuards(LineSignatureGuard)
@@ -36,9 +34,9 @@ export class LineController {
   @ApiResponse({ status: 200, description: 'Webhook processed' })
   @ApiResponse({ status: 403, description: 'Invalid signature' })
   async webhook(
-    @Req() request: Request,
+    @Req() request: RequestWithJsonBody,
   ): Promise<{ status: string }> {
-    const body: LineWebhookEventDto = this.parseBody(request.body);
+    const body = request.body;
 
     this.logger.log(
       `📩 Webhook received: ${body.events?.length ?? 0} events from ${body.destination}`,
