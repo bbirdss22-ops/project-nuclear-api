@@ -250,16 +250,8 @@ export class LineService {
       };
     }
 
-    // Default fallback — reply with echo or helpful message
-    return {
-      replyToken,
-      messages: [
-        {
-          type: 'text',
-          text: '🤖 ขออภัยครับ ไม่เข้าใจคำว่า "' + text + '"\n\nพิมพ์ "สวัสดี" เพื่อดูคำแนะนำการใช้งาน',
-        },
-      ],
-    };
+    // No default fallback — unrecognized messages are silently ignored
+    return null;
   }
 
   /**
