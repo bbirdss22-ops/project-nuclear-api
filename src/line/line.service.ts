@@ -95,7 +95,7 @@ export class LineService {
       };
     }
 
-    if (postbackData === 'register') {
+    if (postbackData === 'register' || postbackData === 'action-register') {
       const token = uuidv4();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
