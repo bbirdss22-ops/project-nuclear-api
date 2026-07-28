@@ -29,33 +29,10 @@ export class LineService {
   }
 
   /**
-   * Ensure a Customer record exists for this lineUserId (upsert if new)
-   * This prevents FK violations on line_events.line_user_id → customers.line_user_id
-   */
-  private async ensureCustomer(lineUserId: string): Promise<void> {
-    try {
-      await this.prisma.customer.upsert({
-        where: { lineUserId },
-        update: {}, // no-op if exists
-        create: { lineUserId },
-      });
-    } catch (error) {
-      // If upsert fails (e.g. concurrent), that's okay — event will fail gracefully
-      this.logger.warn(`ensureCustomer upsert warning: ${(error as Error).message}`);
-    }
-  }
-
-  /**
    * Log a LINE event to the database
-   * Ensures the Customer record exists first to avoid FK constraint violations.
    */
   async logEvent(lineUserId: string | null, eventType: string, raw: unknown): Promise<void> {
     try {
-      // Ensure the customer exists before logging to avoid FK violation
-      if (lineUserId) {
-        await this.ensureCustomer(lineUserId);
-      }
-
       await this.prisma.lineEvent.create({
         data: {
           lineUserId: lineUserId ?? undefined,

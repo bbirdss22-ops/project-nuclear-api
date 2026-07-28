@@ -28,15 +28,35 @@ export class CustomerService {
    * POST /api/customers — Create a new customer (public)
    */
   async create(dto: CreateCustomerDto) {
-    // Check lineUserId uniqueness
+    // Check lineUserId uniqueness - handle stub customers
     if (dto.lineUserId) {
       const existing = await this.prisma.customer.findUnique({
         where: { lineUserId: dto.lineUserId },
       });
       if (existing) {
-        throw new ConflictException(
-          `Customer with lineUserId "${dto.lineUserId}" already exists`,
-        );
+        if (existing.firstName) {
+          // Already fully registered
+          throw new ConflictException(
+            `Customer with lineUserId "${dto.lineUserId}" already exists`,
+          );
+        }
+        // Stub customer (created by ensureCustomer) — update with full data instead
+        const code = await this.generateCustomerCode();
+        const displayName = [dto.firstName, dto.lastName].filter(Boolean).join(' ').trim() || null;
+        const updated = await this.prisma.customer.update({
+          where: { id: existing.id },
+          data: {
+            code,
+            displayName,
+            firstName: dto.firstName ?? null,
+            lastName: dto.lastName ?? null,
+            phone: dto.phone ?? null,
+            email: dto.email ?? null,
+            address: dto.address ?? null,
+            referrerId: dto.referrerId ?? null,
+          },
+        });
+        return updated;
       }
     }
 
