@@ -82,8 +82,13 @@ export class LineService {
     const logData = { data: postbackData, params: postbackParams };
     await this.logEvent(lineUserId ?? null, 'postback', logData);
 
-    if (postbackData.startsWith('product_order_')) {
-      const productId = postbackData.replace('product_order_', '');
+    // Normalize: strip "action=" prefix if present
+    const action = postbackData.startsWith('action=')
+      ? postbackData.slice(7)
+      : postbackData;
+
+    if (action.startsWith('product_order_')) {
+      const productId = action.replace('product_order_', '');
       return {
         replyToken: replyToken ?? '',
         messages: [
@@ -95,7 +100,7 @@ export class LineService {
       };
     }
 
-    if (postbackData === 'register' || postbackData === 'action-register') {
+    if (action === 'register') {
       const token = uuidv4();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
