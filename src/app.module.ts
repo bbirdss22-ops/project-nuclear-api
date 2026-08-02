@@ -6,6 +6,7 @@ import { CustomerModule } from './customer/customer.module.js';
 import { LineModule } from './line/line.module.js';
 import { UserProfileModule } from './user-profile/user-profile.module.js';
 import { StorageModule } from './storage/storage.module.js';
+import { UserModule } from './user/user.module.js';
 import { AppController } from './app.controller.js';
 
 @Module({
@@ -19,6 +20,7 @@ import { AppController } from './app.controller.js';
     LineModule,
     UserProfileModule,
     StorageModule,
+    UserModule,
   ],
   controllers: [AppController],
 })
