@@ -57,6 +57,7 @@ export class CustomerService {
             bankName: dto.bankName ?? null,
             bankAccountName: dto.bankAccountName ?? null,
             bankAccountNumber: dto.bankAccountNumber ?? null,
+            bankStatus: this.hasBankFields(dto) ? 'pending' : undefined,
           },
         });
         return updated;
@@ -97,6 +98,7 @@ export class CustomerService {
         bankName: dto.bankName ?? null,
         bankAccountName: dto.bankAccountName ?? null,
         bankAccountNumber: dto.bankAccountNumber ?? null,
+        ...(this.hasBankFields(dto) && { bankStatus: 'pending' }),
       },
     });
 
@@ -138,8 +140,11 @@ export class CustomerService {
         skip,
         take: pageSize,
         orderBy: { registeredAt: 'desc' },
+        ...(query.bankStatus && { where: { bankStatus: query.bankStatus } }),
       }),
-      this.prisma.customer.count(),
+      this.prisma.customer.count({
+        ...(query.bankStatus && { where: { bankStatus: query.bankStatus } }),
+      }),
     ]);
 
     return this.paginate(data, total, page, pageSize, CUSTOMER_BASE_PATH);
@@ -272,9 +277,112 @@ export class CustomerService {
         ...(dto.bankName !== undefined && { bankName: dto.bankName }),
         ...(dto.bankAccountName !== undefined && { bankAccountName: dto.bankAccountName }),
         ...(dto.bankAccountNumber !== undefined && { bankAccountNumber: dto.bankAccountNumber }),
+        ...(this.hasBankFields(dto) && { bankStatus: 'pending' }),
       },
     });
 
     return customer;
+  }
+
+  /**
+   * Whether the DTO carries any bank account fields.
+   */
+  private hasBankFields(dto: CreateCustomerDto | UpdateCustomerDto): boolean {
+    return !!(
+      dto.bankName !== undefined ||
+      dto.bankAccountName !== undefined ||
+      dto.bankAccountNumber !== undefined
+    );
+  }
+
+  /**
+   * Record a successful (re)upload of a bank book image.
+   * Sets status to 'pending' (if currently none/rejected) and clears reject reason.
+   */
+  async setBankBookUploaded(
+    id: string,
+    bankBookPath: string,
+    pending: boolean,
+  ) {
+    const existing = await this.findById(id);
+    return this.prisma.customer.update({
+      where: { id },
+      data: {
+        bankBookPath,
+        bankRejectReason: null,
+        ...(pending && { bankStatus: 'pending' }),
+      },
+    });
+  }
+
+  /**
+   * Admin review result — approve or reject a bank account.
+   */
+  async setBankReviewed(
+    id: string,
+    action: 'approve' | 'reject',
+    reason: string | null,
+    reviewerId: string,
+    reuploadToken: string | null,
+    reuploadTokenExpiresAt: Date | null,
+  ) {
+    return this.prisma.customer.update({
+      where: { id },
+      data:
+        action === 'approve'
+          ? {
+              bankStatus: 'approved',
+              bankRejectReason: null,
+              bankReviewedAt: new Date(),
+              bankReviewedById: reviewerId,
+              bankReuploadToken: null,
+              bankReuploadTokenExpiresAt: null,
+            }
+          : {
+              bankStatus: 'rejected',
+              bankRejectReason: reason,
+              bankReviewedAt: new Date(),
+              bankReviewedById: reviewerId,
+              bankReuploadToken: reuploadToken,
+              bankReuploadTokenExpiresAt: reuploadTokenExpiresAt,
+            },
+    });
+  }
+
+  /**
+   * Validate a re-upload token. Returns matching customer (must be 'rejected' and not expired)
+   * or null if invalid.
+   */
+  async validateReuploadToken(token: string) {
+    if (!token) return null;
+    const customer = await this.prisma.customer.findUnique({
+      where: { bankReuploadToken: token },
+    });
+    if (!customer) return null;
+    if (customer.bankStatus !== 'rejected') return null;
+    if (
+      !customer.bankReuploadTokenExpiresAt ||
+      customer.bankReuploadTokenExpiresAt.getTime() <= Date.now()
+    ) {
+      return null;
+    }
+    return customer;
+  }
+
+  /**
+   * Consume a re-upload token after a successful re-upload:
+   * sets status back to 'pending', clears reject reason and token.
+   */
+  async consumeReuploadToken(id: string, bankBookPath: string) {
+    return this.prisma.customer.update({
+      where: { id },
+      data: {
+        bankBookPath,
+        bankStatus: 'pending',
+        bankRejectReason: null,
+        bankReuploadToken: null,
+        bankReuploadTokenExpiresAt: null,
+      },
+    });
   }
 }

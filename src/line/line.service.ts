@@ -10,11 +10,14 @@ import type { LineEventDto } from './dto/line-webhook.dto.js';
 export class LineService {
   private readonly logger = new Logger(LineService.name);
   private client: LineBotClient | null = null;
+  readonly frontendUrl: string = 'https://project-nuclear-web.vercel.app';
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
   ) {
+    this.frontendUrl =
+      this.configService.get<string>('FRONTEND_URL') || this.frontendUrl;
     const accessToken = this.configService.get<string>('LINE_ACCESS_TOKEN');
     if (accessToken && accessToken !== '') {
       this.client = LineBotClient.fromChannelAccessToken({

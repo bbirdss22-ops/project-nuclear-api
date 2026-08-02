@@ -35,6 +35,13 @@ model Customer {
   bankName        String?  @map("bank_name") @db.VarChar(50)
   bankAccountName String?  @map("bank_account_name") @db.VarChar(100)
   bankAccountNumber String?  @map("bank_account_number") @db.VarChar(20)
+  bankBookPath         String?  @map("bank_book_path") @db.Text
+  bankStatus           String   @default("none") @map("bank_status") @db.VarChar(20)
+  bankRejectReason     String?  @map("bank_reject_reason") @db.Text
+  bankReviewedAt       DateTime? @map("bank_reviewed_at")
+  bankReviewedById     String?  @map("bank_reviewed_by") @db.Uuid
+  bankReuploadToken    String?  @unique @map("bank_reupload_token") @db.VarChar(64)
+  bankReuploadTokenExpiresAt DateTime? @map("bank_reupload_token_expires_at")
   referrerId      String?  @map("referrer_id") @db.Uuid
   placementUpline String?  @map("placement_upline") @db.Uuid
   position        String?  @db.VarChar(10)

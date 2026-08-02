@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, Min, IsString } from 'class-validator';
+import { IsOptional, IsInt, Min, IsString, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -28,6 +28,11 @@ export class QueryCustomerDto {
   @IsOptional()
   @IsString()
   q?: string;
+
+  @ApiPropertyOptional({ example: 'pending', description: 'กรองตามสถานะ bank (none|pending|approved|rejected)' })
+  @IsOptional()
+  @IsIn(['none', 'pending', 'approved', 'rejected'])
+  bankStatus?: string;
 
   /**
    * Resolve effective page size:
