@@ -54,6 +54,9 @@ export class CustomerService {
             email: dto.email ?? null,
             address: dto.address ?? null,
             referrerId: dto.referrerId ?? null,
+            bankName: dto.bankName ?? null,
+            bankAccountName: dto.bankAccountName ?? null,
+            bankAccountNumber: dto.bankAccountNumber ?? null,
           },
         });
         return updated;
@@ -91,6 +94,9 @@ export class CustomerService {
         email: dto.email ?? null,
         address: dto.address ?? null,
         referrerId: dto.referrerId ?? null,
+        bankName: dto.bankName ?? null,
+        bankAccountName: dto.bankAccountName ?? null,
+        bankAccountNumber: dto.bankAccountNumber ?? null,
       },
     });
 
@@ -263,6 +269,9 @@ export class CustomerService {
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.address !== undefined && { address: dto.address }),
         ...(dto.referrerId !== undefined && { referrerId: dto.referrerId }),
+        ...(dto.bankName !== undefined && { bankName: dto.bankName }),
+        ...(dto.bankAccountName !== undefined && { bankAccountName: dto.bankAccountName }),
+        ...(dto.bankAccountNumber !== undefined && { bankAccountNumber: dto.bankAccountNumber }),
       },
     });
 

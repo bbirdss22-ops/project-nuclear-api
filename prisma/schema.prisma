@@ -32,6 +32,9 @@ model Customer {
   email           String?  @db.VarChar(255)
   idCardNumber    String?  @map("id_card_number") @db.VarChar(20)
   address         String?  @db.Text
+  bankName        String?  @map("bank_name") @db.VarChar(50)
+  bankAccountName String?  @map("bank_account_name") @db.VarChar(100)
+  bankAccountNumber String?  @map("bank_account_number") @db.VarChar(20)
   referrerId      String?  @map("referrer_id") @db.Uuid
   placementUpline String?  @map("placement_upline") @db.Uuid
   position        String?  @db.VarChar(10)

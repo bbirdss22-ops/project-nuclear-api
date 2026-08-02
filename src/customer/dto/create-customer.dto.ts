@@ -5,6 +5,7 @@ import {
   IsEmail,
   IsUUID,
   MaxLength,
+  Matches,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -48,4 +49,22 @@ export class CreateCustomerDto {
   @IsUUID()
   @IsOptional()
   referrerId?: string;
+
+  @ApiPropertyOptional({ example: 'KBANK', description: 'รหัสธนาคาร' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(50)
+  bankName?: string;
+
+  @ApiPropertyOptional({ example: 'สมชาย ใจดี', description: 'ชื่อบัญชี' })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  bankAccountName?: string;
+
+  @ApiPropertyOptional({ example: '1234567890', description: 'เลขบัญชี' })
+  @IsString()
+  @IsOptional()
+  @Matches(/^[0-9]{9,13}$/, { message: 'เลขบัญชีต้องเป็นตัวเลข 9-13 หลัก' })
+  bankAccountNumber?: string;
 }
