@@ -62,6 +62,43 @@ export class BankController {
   }
 
   /**
+   * POST /api/customers/:id/bank-reupload-send — Resend bank re-upload link (admin)
+   */
+  @Post(':id/bank-reupload-send')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Generate & resend bank re-upload link to customer (admin)' })
+  @ApiResponse({ status: 200, description: '{ sent, message }' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  async sendReuploadLink(@Param('id', ParseUUIDPipe) id: string) {
+    const customer = await this.customerService.findById(id);
+
+    // Customer without Line ID — can't push the link.
+    if (!customer.lineUserId) {
+      return { sent: false, message: 'ลูกค้าไม่มี Line ID' };
+    }
+
+    const { token } = await this.customerService.createReuploadToken(id);
+    const frontendUrl =
+      this.lineService.frontendUrl || 'https://project-nuclear-web.vercel.app';
+
+    try {
+      await this.lineService.pushMessage(
+        customer.lineUserId,
+        `📤 กรุณาอัปโหลดรูปสมุดบัญชีใหม่ (ภายใน 7 วัน):\n${frontendUrl}/bank-reupload?token=${token}`,
+      );
+      return { sent: true, message: 'ส่งลิงก์อัปโหลดใหม่แล้ว' };
+    } catch (e) {
+      this.logger.error(
+        `LINE push failed for customer ${id}: ${(e as Error).message}`,
+      );
+      return { sent: false, message: 'ส่งข้อความ LINE ไม่สำเร็จ' };
+    }
+  }
+
+  /**
    * POST /api/customers/:id/bank-book — Upload bank book image (public)
    */
   @Post(':id/bank-book')

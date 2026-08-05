@@ -3,11 +3,13 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
   UseGuards,
   Logger,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -21,6 +23,7 @@ import { CustomerService } from './customer.service.js';
 import { CreateCustomerDto } from './dto/create-customer.dto.js';
 import { UpdateCustomerDto } from './dto/update-customer.dto.js';
 import { QueryCustomerDto } from './dto/query-customer.dto.js';
+import { RegistrationStatsQueryDto } from './dto/registration-stats-query.dto.js';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
@@ -73,6 +76,25 @@ export class CustomerController {
     return this.customerService.findAll(query);
   }
 
+  @Get('stats/registrations')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Registration statistics grouped by period (admin)' })
+  @ApiQuery({ name: 'period', required: false, enum: ['daily', 'monthly', 'yearly'], example: 'daily', description: 'ช่วงเวลาการรวมกลุ่ม' })
+  @ApiQuery({ name: 'from', required: false, example: '2026-01-01', description: 'วันที่เริ่มต้น (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'to', required: false, example: '2026-12-31', description: 'วันที่สิ้นสุด (YYYY-MM-DD)' })
+  @ApiResponse({ status: 200, description: '{ period, from, to, total, data: [{ key, count }] }' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 400, description: 'Invalid period/date format' })
+  async registrationStats(@Query() query: RegistrationStatsQueryDto) {
+    return this.customerService.getRegistrationStats(
+      query.period ?? 'daily',
+      query.from,
+      query.to,
+    );
+  }
+
   @Get('search')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')
@@ -107,6 +129,18 @@ export class CustomerController {
   @ApiResponse({ status: 404, description: 'Customer not found' })
   async findById(@Param('id') id: string) {
     return this.customerService.findById(id);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin', 'superadmin')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Soft-delete customer (set status=deleted)' })
+  @ApiResponse({ status: 200, description: 'Customer soft-deleted' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 404, description: 'Customer not found' })
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.customerService.remove(id);
   }
 
   @Patch(':id')
