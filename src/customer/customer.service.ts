@@ -258,6 +258,7 @@ export class CustomerService {
       data: {
         bankReuploadToken: token,
         bankReuploadTokenExpiresAt: expiresAt,
+        bankStatus: 'rejected',
       },
     });
 
@@ -486,7 +487,11 @@ export class CustomerService {
       data: {
         bankBookPath,
         bankRejectReason: null,
-        ...(pending && { bankStatus: 'pending' }),
+        ...(pending && {
+          bankStatus: 'pending',
+          bankReuploadToken: null,
+          bankReuploadTokenExpiresAt: null,
+        }),
       },
     });
   }
@@ -526,8 +531,8 @@ export class CustomerService {
   }
 
   /**
-   * Validate a re-upload token. Returns matching customer (must be 'rejected' and not expired)
-   * or null if invalid.
+   * Validate a re-upload token. Returns matching customer (token match, not expired,
+   * and not already approved) or null if invalid.
    */
   async validateReuploadToken(token: string) {
     if (!token) return null;
@@ -535,7 +540,7 @@ export class CustomerService {
       where: { bankReuploadToken: token },
     });
     if (!customer) return null;
-    if (customer.bankStatus !== 'rejected') return null;
+    if (customer.bankStatus === 'approved') return null;
     if (
       !customer.bankReuploadTokenExpiresAt ||
       customer.bankReuploadTokenExpiresAt.getTime() <= Date.now()
