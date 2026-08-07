@@ -67,20 +67,7 @@ export class LineService {
       ? postbackData.slice(7)
       : postbackData;
 
-    if (action.startsWith('product_order_')) {
-      const productId = action.replace('product_order_', '');
-      return {
-        replyToken: replyToken ?? '',
-        messages: [
-          {
-            type: 'text',
-            text: `✅ ขอบคุณที่สนใจสั่งซื้อสินค้า (รหัส: ${productId})\nเจ้าหน้าที่จะติดต่อกลับโดยเร็วที่สุด`,
-          },
-        ],
-      };
-    }
-
-    if (action === 'register') {
+    if (action.startsWith('register')) {
       const token = uuidv4();
       const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
