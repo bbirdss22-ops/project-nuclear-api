@@ -42,6 +42,11 @@ export class CreateCustomerDto {
   @IsOptional()
   address?: string;
 
+  @ApiPropertyOptional({ description: 'พืชที่ปลูก' })
+  @IsString()
+  @IsOptional()
+  plants?: string;
+
   @ApiPropertyOptional({ example: 'Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx', description: 'Line User ID' })
   @IsString()
   @IsOptional()

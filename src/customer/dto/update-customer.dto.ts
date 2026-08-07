@@ -38,6 +38,11 @@ export class UpdateCustomerDto {
   @IsOptional()
   address?: string;
 
+  @ApiPropertyOptional({ description: 'พืชที่ปลูก' })
+  @IsString()
+  @IsOptional()
+  plants?: string;
+
   @ApiPropertyOptional({ description: 'Line User ID' })
   @IsString()
   @IsOptional()
