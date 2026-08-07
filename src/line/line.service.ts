@@ -202,58 +202,7 @@ export class LineService {
     const text = message.text ?? '';
     this.logger.log(`💬 Text from ${lineUserId}: "${text.substring(0, 100)}"`);
 
-    // Simple command router
-    const lowerText = text.toLowerCase().trim();
-
-    if (lowerText === 'สวัสดี' || lowerText === 'hi' || lowerText === 'hello') {
-      return {
-        replyToken,
-        messages: [
-          {
-            type: 'text',
-            text: '👋 สวัสดีครับ! \n\nยินดีต้อนรับสู่ Project Nuclear \n\n📌 สามารถใช้เมนูด้านล่าง หรือพิมพ์คำสั่งต่อไปนี้:\n\n• "สินค้า" — ดูรายการสินค้า\n• "ติดต่อ" — ติดต่อเจ้าหน้าที่\n• "สมัคร" — สมัครสมาชิก',
-          },
-        ],
-      };
-    }
-
-    if (lowerText === 'สินค้า' || lowerText === 'product' || lowerText === 'products') {
-      return {
-        replyToken,
-        messages: [
-          {
-            type: 'text',
-            text: '🛍️ รายการสินค้า:\n\nขณะนี้ยังไม่มีสินค้าในระบบ\n📌 ติดต่อเจ้าหน้าที่เพื่อสอบถามเพิ่มเติม',
-          },
-        ],
-      };
-    }
-
-    if (lowerText === 'ติดต่อ' || lowerText === 'contact') {
-      return {
-        replyToken,
-        messages: [
-          {
-            type: 'text',
-            text: '📞 ติดต่อเจ้าหน้าที่:\n\nLine Official: @project-nuclear\nหรือรอเจ้าหน้าที่ตอบกลับในแชทนี้',
-          },
-        ],
-      };
-    }
-
-    if (lowerText === 'สมัคร' || lowerText === 'register') {
-      return {
-        replyToken,
-        messages: [
-          {
-            type: 'text',
-            text: '📝 สมัครสมาชิกได้ที่:\nhttps://project-nuclear-api.onrender.com/api/register\n\nหรือพิมพ์ "สมัคร [ชื่อ] [เบอร์โทร]" เพื่อสมัครผ่าน Line',
-          },
-        ],
-      };
-    }
-
-    // No default fallback — unrecognized messages are silently ignored
+    // Text commands removed — all text messages are silently ignored.
     return null;
   }
 
