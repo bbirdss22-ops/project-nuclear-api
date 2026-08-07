@@ -149,9 +149,25 @@ export class LineService {
   }
 
   /**
-   * Push a text message to a user via LINE Messaging API
+   * Push the post-registration welcome message (activity image if configured,
+   * followed by the customer code text). Reads ACTIVITY_IMAGE_URL from env;
+   * when not set, only the text message is pushed.
    */
-  async pushMessage(lineUserId: string, text: string): Promise<boolean> {
+  async pushWelcome(lineUserId: string, code: string): Promise<boolean> {
+    const text = `🎉 สมัครสมาชิกสำเร็จ!\n🆔 รหัสลูกค้าของคุณคือ: ${code}\n\n📌 ใช้รหัสนี้แจ้งเจ้าหน้าที่เวลาสอบถามหรือสั่งซื้อสินค้า`;
+    const imageUrl = this.configService.get<string>('ACTIVITY_IMAGE_URL');
+    return this.pushMessage(lineUserId, text, imageUrl);
+  }
+
+  /**
+   * Push a text message to a user via LINE Messaging API.
+   * Optionally prepends an image message (e.g. activity photo) when imageUrl is provided.
+   */
+  async pushMessage(
+    lineUserId: string,
+    text: string,
+    imageUrl?: string,
+  ): Promise<boolean> {
     if (!this.client) {
       this.logger.error(
         '❌ Cannot push message: LINE_ACCESS_TOKEN not configured',
@@ -160,10 +176,22 @@ export class LineService {
     }
 
     try {
-      await this.client.pushMessage({
-        to: lineUserId,
-        messages: [{ type: 'text', text }],
-      });
+      const messages: messagingApi.Message[] = [];
+      const original = imageUrl?.trim();
+      if (original) {
+        const preview =
+          this.configService
+            .get<string>('ACTIVITY_IMAGE_PREVIEW_URL')
+            ?.trim() || original;
+        messages.push({
+          type: 'image',
+          originalContentUrl: original,
+          previewImageUrl: preview,
+        });
+      }
+      messages.push({ type: 'text', text });
+
+      await this.client.pushMessage({ to: lineUserId, messages });
       this.logger.log(`📤 Push message sent to ${lineUserId}`);
       return true;
     } catch (error) {

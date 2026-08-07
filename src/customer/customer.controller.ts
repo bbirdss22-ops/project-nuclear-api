@@ -50,11 +50,9 @@ export class CustomerController {
 
     // Push welcome message with customer code via LINE if lineUserId is available
     if (customer.lineUserId && customer.code) {
+      // T145: activity image (ACTIVITY_IMAGE_URL) is prepended when configured
       this.lineService
-        .pushMessage(
-          customer.lineUserId,
-          `🎉 สมัครสมาชิกสำเร็จ!\n🆔 รหัสลูกค้าของคุณคือ: ${customer.code}\n\n📌 ใช้รหัสนี้แจ้งเจ้าหน้าที่เวลาสอบถามหรือสั่งซื้อสินค้า`,
-        )
+        .pushWelcome(customer.lineUserId, customer.code)
         .catch((e: Error) =>
           this.logger.error(`Push welcome failed: ${e.message}`),
         );
