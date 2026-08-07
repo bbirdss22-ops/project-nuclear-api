@@ -23,6 +23,9 @@ export class CreateCustomerDto {
   lastName: string;
 
   @ApiProperty({ example: '0812345678', description: 'เบอร์โทรศัพท์' })
+  // T140: This field maps to Customer.phone which now has a UNIQUE constraint.
+  // Duplicate non-empty phones for active customers will be rejected with HTTP 409.
+  // (No new required field is introduced here — validation stays unchanged.)
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)

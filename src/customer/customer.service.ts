@@ -5,6 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateCustomerDto } from './dto/create-customer.dto.js';
 import { UpdateCustomerDto } from './dto/update-customer.dto.js';
@@ -12,6 +13,41 @@ import { QueryCustomerDto } from './dto/query-customer.dto.js';
 import { PaginatedResponse, buildPaginationLinks } from '../common/interfaces/pagination.interface.js';
 
 const CUSTOMER_BASE_PATH = '/api/customers';
+
+/**
+ * T136: Scalar columns returned by the customer list/search endpoints.
+ * Enumerated explicitly so the listing query never joins relations or pulls
+ * unneeded columns — while preserving the exact response shape.
+ */
+const CUSTOMER_LIST_SELECT: Prisma.CustomerSelect = {
+  id: true,
+  code: true,
+  lineUserId: true,
+  displayName: true,
+  firstName: true,
+  lastName: true,
+  phone: true,
+  email: true,
+  idCardNumber: true,
+  address: true,
+  bankName: true,
+  bankAccountName: true,
+  bankAccountNumber: true,
+  bankBookPath: true,
+  bankStatus: true,
+  bankRejectReason: true,
+  bankReviewedAt: true,
+  bankReviewedById: true,
+  bankReuploadToken: true,
+  bankReuploadTokenExpiresAt: true,
+  referrerId: true,
+  placementUpline: true,
+  position: true,
+  treePath: true,
+  status: true,
+  registeredAt: true,
+  updatedAt: true,
+};
 
 @Injectable()
 export class CustomerService {
@@ -29,6 +65,17 @@ export class CustomerService {
    * POST /api/customers — Create a new customer (public)
    */
   async create(dto: CreateCustomerDto) {
+    // T140: Phone number uniqueness — reject duplicates for active customers.
+    // Postgres unique constraint allows multiple NULLs, so only check non-empty phones.
+    if (dto.phone) {
+      const existingPhone = await this.prisma.customer.findFirst({
+        where: { phone: dto.phone, status: { not: 'deleted' } },
+      });
+      if (existingPhone) {
+        throw new ConflictException('เบอร์โทรนี้ถูกใช้แล้ว');
+      }
+    }
+
     // Check lineUserId uniqueness - handle stub customers
     if (dto.lineUserId) {
       const existing = await this.prisma.customer.findUnique({
@@ -85,23 +132,35 @@ export class CustomerService {
 
     const code = await this.generateCustomerCode();
 
-    const customer = await this.prisma.customer.create({
-      data: {
-        code,
-        lineUserId: dto.lineUserId ?? null,
-        displayName,
-        firstName: dto.firstName ?? null,
-        lastName: dto.lastName ?? null,
-        phone: dto.phone ?? null,
-        email: dto.email ?? null,
-        address: dto.address ?? null,
-        referrerId: dto.referrerId ?? null,
-        bankName: dto.bankName ?? null,
-        bankAccountName: dto.bankAccountName ?? null,
-        bankAccountNumber: dto.bankAccountNumber ?? null,
-        ...(this.hasBankFields(dto) && { bankStatus: 'pending' }),
-      },
-    });
+    let customer;
+    try {
+      customer = await this.prisma.customer.create({
+        data: {
+          code,
+          lineUserId: dto.lineUserId ?? null,
+          displayName,
+          firstName: dto.firstName ?? null,
+          lastName: dto.lastName ?? null,
+          phone: dto.phone ?? null,
+          email: dto.email ?? null,
+          address: dto.address ?? null,
+          referrerId: dto.referrerId ?? null,
+          bankName: dto.bankName ?? null,
+          bankAccountName: dto.bankAccountName ?? null,
+          bankAccountNumber: dto.bankAccountNumber ?? null,
+          ...(this.hasBankFields(dto) && { bankStatus: 'pending' }),
+        },
+      });
+    } catch (error) {
+      // T140: Race-condition guard — unique constraint violation (e.g. duplicate phone).
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException('เบอร์โทรนี้ถูกใช้แล้ว');
+      }
+      throw error;
+    }
 
     return customer;
   }
@@ -292,19 +351,23 @@ export class CustomerService {
     const pageSize = query.effectivePageSize;
     const skip = (page - 1) * pageSize;
 
-    const findArgs = {
-      skip,
-      take: pageSize,
-      orderBy: { registeredAt: 'desc' as const },
-      where: {
-        status: { not: 'deleted' },
-        ...(query.bankStatus && { bankStatus: query.bankStatus }),
-      },
+    const where = {
+      status: { not: 'deleted' },
+      ...(query.bankStatus && { bankStatus: query.bankStatus }),
     };
 
+    // T136: Single data query + separate count query (no N+1).
+    // Explicit `select` enumerates the exact scalar columns returned so the
+    // list endpoint never drags in relation joins or unneeded blobs.
     const [data, total] = await Promise.all([
-      this.prisma.customer.findMany(findArgs),
-      this.prisma.customer.count({ where: findArgs.where }),
+      this.prisma.customer.findMany({
+        select: CUSTOMER_LIST_SELECT,
+        skip,
+        take: pageSize,
+        orderBy: { registeredAt: 'desc' },
+        where,
+      }),
+      this.prisma.customer.count({ where }),
     ]);
 
     return this.paginate(data, total, page, pageSize, CUSTOMER_BASE_PATH);
@@ -337,6 +400,7 @@ export class CustomerService {
 
     const [data, total] = await Promise.all([
       this.prisma.customer.findMany({
+        select: CUSTOMER_LIST_SELECT,
         where,
         skip,
         take: pageSize,

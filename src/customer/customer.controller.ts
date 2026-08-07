@@ -28,6 +28,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard.js';
 import { RolesGuard } from '../auth/guards/roles.guard.js';
 import { Roles } from '../auth/decorators/roles.decorator.js';
 import { LineService } from '../line/line.service.js';
+import { ConfigService } from '@nestjs/config';
 
 @ApiTags('Customers')
 @Controller('customers')
@@ -37,6 +38,7 @@ export class CustomerController {
   constructor(
     private readonly customerService: CustomerService,
     private readonly lineService: LineService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Post()
@@ -44,17 +46,23 @@ export class CustomerController {
   @ApiBody({ type: CreateCustomerDto })
   @ApiResponse({ status: 201, description: 'Customer created' })
   @ApiResponse({ status: 400, description: 'Validation error' })
-  @ApiResponse({ status: 409, description: 'lineUserId already exists' })
+  @ApiResponse({ status: 409, description: 'lineUserId already exists or phone already in use' })
   async create(@Body() dto: CreateCustomerDto) {
     const customer = await this.customerService.create(dto);
 
     // Push welcome message with customer code via LINE if lineUserId is available
     if (customer.lineUserId && customer.code) {
+      const baseMessage = `🎉 สมัครสมาชิกสำเร็จ!\n🆔 รหัสลูกค้าของคุณคือ: ${customer.code}\n\n📌 ใช้รหัสนี้แจ้งเจ้าหน้าที่เวลาสอบถามหรือสั่งซื้อสินค้า`;
+
+      // T142: Append the Google Form registration link when configured.
+      const giftFormUrl = this.configService.get<string>('GIFT_FORM_URL');
+      const message =
+        giftFormUrl && giftFormUrl.trim() !== ''
+          ? `${baseMessage}\n\n🎁 ลงทะเบียนรับของสมนาคุณ: ${giftFormUrl.trim()}`
+          : baseMessage;
+
       this.lineService
-        .pushMessage(
-          customer.lineUserId,
-          `🎉 สมัครสมาชิกสำเร็จ!\n🆔 รหัสลูกค้าของคุณคือ: ${customer.code}\n\n📌 ใช้รหัสนี้แจ้งเจ้าหน้าที่เวลาสอบถามหรือสั่งซื้อสินค้า`,
-        )
+        .pushMessage(customer.lineUserId, message)
         .catch((e: Error) =>
           this.logger.error(`Push welcome failed: ${e.message}`),
         );
