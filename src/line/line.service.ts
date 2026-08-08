@@ -69,7 +69,7 @@ export class LineService {
 
     if (action === 'register') {
       const token = uuidv4();
-      const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       await this.prisma.registrationToken.create({
         data: {
@@ -86,7 +86,7 @@ export class LineService {
         messages: [
           {
             type: 'text',
-            text: `📝 กรุณากดลิงก์นี้เพื่อสมัครสมาชิก (ลิงก์หมดอายุใน 5 นาที):\n${registerUrl}`,
+            text: `📝 กรุณากดลิงก์นี้เพื่อสมัครสมาชิก (ลิงก์หมดอายุใน 1 ชั่วโมง):\n${registerUrl}`,
           },
         ],
       };
