@@ -393,6 +393,7 @@ export class CustomerService {
     const where = {
       status: { not: 'deleted' },
       OR: [
+        { code: { contains: q, mode: 'insensitive' as const } },
         { firstName: { contains: q, mode: 'insensitive' as const } },
         { lastName: { contains: q, mode: 'insensitive' as const } },
         { phone: { contains: q, mode: 'insensitive' as const } },
