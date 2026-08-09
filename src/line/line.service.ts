@@ -217,6 +217,32 @@ export class LineService {
     const text = message.text ?? '';
     this.logger.log(`💬 Text from ${lineUserId}: "${text.substring(0, 100)}"`);
 
+    // Check for registration keyword
+    if (text.includes('สมัครสมาชิก') && lineUserId) {
+      const token = uuidv4();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await this.prisma.registrationToken.create({
+        data: {
+          id: token,
+          lineUserId,
+          expiresAt,
+        },
+      });
+
+      const registerUrl = `${this.frontendUrl}/register?token=${token}`;
+
+      return {
+        replyToken: replyToken ?? '',
+        messages: [
+          {
+            type: 'text',
+            text: `📝 กรุณากดลิงก์นี้เพื่อสมัครสมาชิก (ลิงก์หมดอายุใน 1 ชั่วโมง):\n${registerUrl}`,
+          },
+        ],
+      };
+    }
+
     // Text commands removed — all text messages are silently ignored.
     return null;
   }
