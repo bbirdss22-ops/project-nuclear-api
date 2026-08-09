@@ -154,7 +154,23 @@ export class LineService {
    * when not set, only the text message is pushed.
    */
   async pushWelcome(lineUserId: string, code: string): Promise<boolean> {
-    const text = `🎉 สมัครสมาชิกสำเร็จ!\n🆔 รหัสลูกค้าของคุณคือ: ${code}\n\n📌 ใช้รหัสนี้แจ้งเจ้าหน้าที่เวลาสอบถามหรือสั่งซื้อสินค้า`;
+    const text = `🎉 สมัครสมาชิกสำเร็จ!
+
+🆔 รหัสลูกค้าของคุณคือ: ${code}
+
+📌 กรุณาใช้รหัสนี้แจ้งเจ้าหน้าที่
+เมื่อต้องการสอบถามหรือสั่งซื้อสินค้า
+
+🎁 รับวัสดุปรุงดินฟรี!
+
+เพียงทำตามขั้นตอนง่าย ๆ 👇
+1️⃣ กดแชร์โพสต์กิจกรรมบน Facebook
+2️⃣ 📸 แคปหน้าจอหลังแชร์โพสต์
+3️⃣ 📲 ส่งภาพแคปหน้าจอมาทาง LINE OA
+
+🔗 Facebook: https://www.facebook.com/share/p/1DCzWwQkuq/
+
+✨ แชร์แล้วอย่าลืมส่งหลักฐาน เพื่อรับวัสดุปรุงดินฟรีนะคะ!`;
     const imageUrl = this.configService.get<string>('ACTIVITY_IMAGE_URL');
     return this.pushMessage(lineUserId, text, imageUrl);
   }
