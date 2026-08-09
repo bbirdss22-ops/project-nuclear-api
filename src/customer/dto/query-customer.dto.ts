@@ -24,7 +24,7 @@ export class QueryCustomerDto {
   @Min(1)
   limit?: number;
 
-  @ApiPropertyOptional({ example: 'สมชาย', description: 'คำค้นหา (ชื่อ/เบอร์/email)' })
+  @ApiPropertyOptional({ example: 'NC00001', description: 'คำค้นหา (code/ชื่อ/เบอร์/email)' })
   @IsOptional()
   @IsString()
   q?: string;
