@@ -161,7 +161,7 @@ export class LineService {
 📌 กรุณาใช้รหัสนี้แจ้งเจ้าหน้าที่
 เมื่อต้องการสอบถามหรือสั่งซื้อสินค้า
 
-🎁 รับวัสดุปรุงดินฟรี!
+🎁 รับวัสดุปรับปรุงดินฟรี!
 
 เพียงทำตามขั้นตอนง่าย ๆ 👇
 1️⃣ กดแชร์โพสต์กิจกรรมบน Facebook
@@ -170,7 +170,7 @@ export class LineService {
 
 🔗 Facebook: https://www.facebook.com/share/p/1DCzWwQkuq/
 
-✨ แชร์แล้วอย่าลืมส่งหลักฐาน เพื่อรับวัสดุปรุงดินฟรีนะคะ!`;
+✨ แชร์แล้วอย่าลืมส่งหลักฐาน เพื่อรับวัสดุปรับปรุงดินฟรีนะคะ!`;
     const imageUrl = this.configService.get<string>('ACTIVITY_IMAGE_URL');
     return this.pushMessage(lineUserId, text, imageUrl);
   }
