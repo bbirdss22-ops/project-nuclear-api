@@ -92,53 +92,6 @@ export class LineService {
       };
     }
 
-    if (action === 'referral') {
-      // Referral postback — build the sharable referral link from the customer's code.
-      if (!lineUserId) {
-        return {
-          replyToken: replyToken ?? '',
-          messages: [
-            {
-              type: 'text',
-              text: 'ไม่พบข้อมูลผู้ใช้ กรุณาลองใหม่อีกครั้ง',
-            },
-          ],
-        };
-      }
-
-      const customer = await this.prisma.customer.findFirst({
-        where: {
-          lineUserId,
-          status: { not: 'deleted' },
-        },
-        select: { code: true },
-      });
-
-      if (!customer?.code) {
-        return {
-          replyToken: replyToken ?? '',
-          messages: [
-            {
-              type: 'text',
-              text: 'ยังไม่พบรหัสลูกค้าของคุณ กรุณาสมัครสมาชิกก่อนเพื่อสร้างลิงก์แนะนำเพื่อน',
-            },
-          ],
-        };
-      }
-
-      const referralUrl = `${this.frontendUrl}/register?referrerCode=${encodeURIComponent(customer.code)}`;
-
-      return {
-        replyToken: replyToken ?? '',
-        messages: [
-          {
-            type: 'text',
-            text: `🎯 ลิงก์แนะนำเพื่อนของคุณ:\n${referralUrl}\n\nแชร์ลิงก์นี้ให้เพื่อน!`,
-          },
-        ],
-      };
-    }
-
     return null;
   }
 

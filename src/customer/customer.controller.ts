@@ -118,14 +118,6 @@ export class CustomerController {
     return this.customerService.findByLineUserId(lineUserId);
   }
 
-  @Get('referrer/:code')
-  @ApiOperation({ summary: 'Find referrer display info by customer code (public)' })
-  @ApiResponse({ status: 200, description: 'Referrer display info' })
-  @ApiResponse({ status: 404, description: 'Customer not found' })
-  async findReferrerPublic(@Param('code') code: string) {
-    return this.customerService.findPublicByCode(code);
-  }
-
   @Get(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin', 'superadmin')

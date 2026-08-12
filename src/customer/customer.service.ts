@@ -89,10 +89,6 @@ export class CustomerService {
             `Customer with lineUserId "${dto.lineUserId}" already exists`,
           );
         }
-        // Resolve referrer by code (if provided) before updating the stub
-        const referrerId = dto.referrerCode
-          ? await this.resolveReferrerCode(dto.referrerCode)
-          : existing.referrerId;
         // Stub customer (created by ensureCustomer) — update with full data instead
         const code = await this.generateCustomerCode();
         const displayName = [dto.firstName, dto.lastName].filter(Boolean).join(' ').trim() || null;
@@ -107,7 +103,7 @@ export class CustomerService {
             email: dto.email ?? null,
             address: dto.address ?? null,
             plants: dto.plants ?? null,
-            referrerId,
+            referrerId: dto.referrerId ?? null,
             bankName: dto.bankName ?? null,
             bankAccountName: dto.bankAccountName ?? null,
             bankAccountNumber: dto.bankAccountNumber ?? null,
@@ -118,10 +114,17 @@ export class CustomerService {
       }
     }
 
-    // Validate referrerCode if provided
-    const referrerId = dto.referrerCode
-      ? await this.resolveReferrerCode(dto.referrerCode)
-      : null;
+    // Validate referrerId if provided
+    if (dto.referrerId) {
+      const referrer = await this.prisma.customer.findUnique({
+        where: { id: dto.referrerId },
+      });
+      if (!referrer) {
+        throw new BadRequestException(
+          `Referrer with id "${dto.referrerId}" not found`,
+        );
+      }
+    }
 
     // Build displayName from firstName + lastName
     const displayName = [dto.firstName, dto.lastName]
@@ -144,7 +147,7 @@ export class CustomerService {
           email: dto.email ?? null,
           address: dto.address ?? null,
           plants: dto.plants ?? null,
-          referrerId,
+          referrerId: dto.referrerId ?? null,
           bankName: dto.bankName ?? null,
           bankAccountName: dto.bankAccountName ?? null,
           bankAccountNumber: dto.bankAccountNumber ?? null,
@@ -462,52 +465,6 @@ export class CustomerService {
   }
 
   /**
-   * Resolve a customer code into a referrer customer id (FK value).
-   * Throws NotFoundException (404) when no active customer matches the code.
-   * Used by create()/update() so the API accepts a human-friendly `referrerCode`
-   * while the DB keeps the original `referrer_id` FK column unchanged.
-   */
-  private async resolveReferrerCode(code: string): Promise<string> {
-    const referrer = await this.prisma.customer.findFirst({
-      where: {
-        code,
-        status: { not: 'deleted' },
-      },
-      select: { id: true },
-    });
-    if (!referrer) {
-      throw new NotFoundException(
-        `Referrer with code "${code}" not found`,
-      );
-    }
-    return referrer.id;
-  }
-
-  /**
-   * Find an active customer by code — returns only safe display fields.
-   * Public-safe: used by the registration page to show "แนะนำโดย: [name]" without
-   * exposing sensitive customer data. Throws 404 when not found.
-   */
-  async findPublicByCode(code: string) {
-    const customer = await this.prisma.customer.findFirst({
-      where: {
-        code,
-        status: { not: 'deleted' },
-      },
-      select: {
-        code: true,
-        displayName: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
-    if (!customer) {
-      throw new NotFoundException(`Customer with code "${code}" not found`);
-    }
-    return customer;
-  }
-
-  /**
    * PATCH /api/customers/:id — Update customer (partial)
    */
   async update(id: string, dto: UpdateCustomerDto) {
@@ -532,14 +489,15 @@ export class CustomerService {
       }
     }
 
-    // Validate referrerCode if provided
-    let newReferrerId: string | null | undefined;
-    if (dto.referrerCode !== undefined) {
-      newReferrerId = dto.referrerCode
-        ? await this.resolveReferrerCode(dto.referrerCode)
-        : null;
-      if (newReferrerId && newReferrerId === id) {
-        throw new BadRequestException('บุคคลอ้างอิงไม่สามารถเป็นตัวเองได้');
+    // Validate referrerId if provided
+    if (dto.referrerId && dto.referrerId !== id) {
+      const referrer = await this.prisma.customer.findUnique({
+        where: { id: dto.referrerId },
+      });
+      if (!referrer) {
+        throw new BadRequestException(
+          `Referrer with id "${dto.referrerId}" not found`,
+        );
       }
     }
 
@@ -561,7 +519,7 @@ export class CustomerService {
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.address !== undefined && { address: dto.address }),
         ...(dto.plants !== undefined && { plants: dto.plants }),
-        ...(newReferrerId !== undefined && { referrerId: newReferrerId }),
+        ...(dto.referrerId !== undefined && { referrerId: dto.referrerId }),
         ...(dto.bankName !== undefined && { bankName: dto.bankName }),
         ...(dto.bankAccountName !== undefined && { bankAccountName: dto.bankAccountName }),
         ...(dto.bankAccountNumber !== undefined && { bankAccountNumber: dto.bankAccountNumber }),
