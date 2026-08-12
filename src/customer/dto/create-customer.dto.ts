@@ -3,7 +3,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsEmail,
-  IsUUID,
   MaxLength,
   Matches,
 } from 'class-validator';
@@ -53,10 +52,11 @@ export class CreateCustomerDto {
   @MaxLength(255)
   lineUserId?: string;
 
-  @ApiPropertyOptional({ example: 'uuid-of-referrer', description: 'UUID ของคนชวน (referrer)' })
-  @IsUUID()
+  @ApiPropertyOptional({ example: 'NC-001', description: 'รหัสลูกค้า (code) ของคนชวน (referrer)' })
+  @IsString()
   @IsOptional()
-  referrerId?: string;
+  @MaxLength(50)
+  referrerCode?: string;
 
   @ApiPropertyOptional({ example: 'KBANK', description: 'รหัสธนาคาร' })
   @IsString()
