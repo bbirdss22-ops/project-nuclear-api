@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
+import { PrismaPg } from '@prisma/adapter-pg';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Seeding dev database...');
@@ -38,7 +40,7 @@ async function main() {
   const admin = await prisma.user.create({
     data: {
       username: 'admin',
-      passwordHash: '$2b$10$placeholder-placeholder-placeholder', // ใส่ bcrypt hash จริงใน local
+      password: 'change-me-in-prod', // TODO: ใส่ bcrypt hash จริงใน local
       role: 'superadmin',
     },
   });
