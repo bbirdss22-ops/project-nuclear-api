@@ -18,7 +18,7 @@ export class LineService {
   ) {
     this.frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || this.frontendUrl;
-    const accessToken = this.configService.get<string>('LINE_ACCESS_TOKEN');
+    const accessToken = this.lineAccessToken();
     if (accessToken && accessToken !== '') {
       this.client = LineBotClient.fromChannelAccessToken({
         channelAccessToken: accessToken,
@@ -29,6 +29,14 @@ export class LineService {
         '⚠️ LINE_ACCESS_TOKEN not configured — pushMessage will be unavailable',
       );
     }
+  }
+
+  private lineAccessToken(): string | undefined {
+    const suffix = process.env.NODE_ENV === 'production' ? '_PROD' : '_DEV';
+    return (
+      this.configService.get<string>(`LINE_ACCESS_TOKEN${suffix}`) ??
+      this.configService.get<string>('LINE_ACCESS_TOKEN')
+    );
   }
 
   /**

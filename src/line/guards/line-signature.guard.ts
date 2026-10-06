@@ -18,7 +18,10 @@ export class LineSignatureGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<RequestWithRawBody>();
-    const channelSecret = this.configService.get<string>('LINE_CHANNEL_SECRET');
+    const envSuffix = process.env.NODE_ENV === 'production' ? '_PROD' : '_DEV';
+    const channelSecret =
+      this.configService.get<string>(`LINE_CHANNEL_SECRET${envSuffix}`) ??
+      this.configService.get<string>('LINE_CHANNEL_SECRET');
 
     // If LINE_CHANNEL_SECRET is not configured, skip verification
     if (!channelSecret || channelSecret === '') {
